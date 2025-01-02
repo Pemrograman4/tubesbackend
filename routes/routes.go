@@ -19,12 +19,22 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		AllowCredentials: true,
 	}))
 
+	// Auth routes
 	authCtrl := controllers.AuthController{DB: db}
-
 	authRoutes := router.Group("/auth")
 	{
 		authRoutes.POST("/register", authCtrl.Register)
 		authRoutes.POST("/login", authCtrl.Login)
+	}
+
+	// Course routes
+	courseCtrl := controllers.CourseController{DB: db}
+	courseRoutes := router.Group("/courses")
+	{
+		courseRoutes.POST("", courseCtrl.CreateCourse)
+		courseRoutes.GET("", courseCtrl.GetCourses)
+		courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
+		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
 	}
 
 	return router
