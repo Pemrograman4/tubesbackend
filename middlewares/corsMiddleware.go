@@ -10,7 +10,7 @@ import (
 // ApplyCORS untuk Gin
 func ApplyCORS() gin.HandlerFunc {
     return func(c *gin.Context) {
-        c.Header("Access-Control-Allow-Origin", "*")  // Mengizinkan semua asal
+        c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5504")  // Mengizinkan semua asal
         c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -26,7 +26,7 @@ func ApplyCORS() gin.HandlerFunc {
 
 func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5504")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if r.Method == "OPTIONS" {
@@ -36,3 +36,4 @@ func CorsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+

@@ -10,9 +10,10 @@ type User struct {
 }
 
 type Course struct {
-	ID          string  `json:"id" gorm:"primaryKey"`
-	Name        string  `json:"name"`
-	Duration    int     `json:"duration"`
-	Cost        float64 `json:"cost"`
-	Description string  `json:"description"`
+    ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+    Name        string             `bson:"name" json:"name"`
+    Duration    int                `bson:"duration" json:"duration"`
+    Cost        float64            `bson:"cost" json:"cost"`
+    Description string             `bson:"description" json:"description"`
+    CreatedAt   primitive.DateTime `bson:"createdAt" json:"createdAt"`
 }

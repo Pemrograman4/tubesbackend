@@ -37,11 +37,17 @@ func (ctrl *AuthController) Register(c *gin.Context) {
 	defer cancel()
 
 	count, err := userCollection.CountDocuments(ctx, bson.M{"username": input.Username})
-	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
-		return
-	}
+if err != nil {
+    // Menangani kesalahan jika terjadi
+    c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan saat memeriksa username"})
+    return
+}
 
+if count > 0 {
+    // Jika ada username yang sama, kirimkan respons error
+    c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+    return
+}
 	// Insert user
 	_, err = userCollection.InsertOne(ctx, input)
 	if err != nil {

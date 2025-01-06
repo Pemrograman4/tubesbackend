@@ -40,3 +40,4 @@ func main() {
 	router := routes.SetupRoutes(DB)
 	log.Fatal(router.Run(":8080")) // Run server on port 8080
 }
+

@@ -32,10 +32,13 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	courseRoutes := router.Group("/courses")
 	{
 		courseRoutes.POST("", courseCtrl.CreateCourse)
-		courseRoutes.GET("", courseCtrl.GetCourses)
-		courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
-		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
-	}
+    courseRoutes.GET("", courseCtrl.GetCourses)
+    courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
+    courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
 
+    // Tambahkan route baru untuk mendapatkan ID kursus terbaru
+    courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
+}
+	
 	return router
 }

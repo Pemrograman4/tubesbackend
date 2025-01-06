@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CourseController struct {
@@ -119,4 +120,28 @@ func (cc *CourseController) DeleteCourse(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Course deleted successfully"})
+}
+
+// GetLatestCourseId mendapatkan ID kursus terbaru
+func (cc *CourseController) GetLatestCourseId(c *gin.Context) {
+	collection := cc.DB.Collection("courses")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var course struct {
+		ID        primitive.ObjectID `bson:"_id"`
+		CreatedAt time.Time          `bson:"createdAt"`
+	}
+
+	err := collection.FindOne(ctx, bson.M{}, options.FindOne().SetSort(bson.D{{Key: "createdAt", Value: -1}})).Decode(&course)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No courses found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch latest course ID"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"latestId": course.ID.Hex()})
 }
