@@ -37,5 +37,16 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
 	}
 
+	// Siswa routes
+	siswaCtrl := controllers.SiswaController{DB: db}
+	siswaRoutes := router.Group("/siswa")
+	{
+		siswaRoutes.POST("", siswaCtrl.CreateSiswa)
+		siswaRoutes.GET("", siswaCtrl.GetSiswa)
+		siswaRoutes.GET("/:id", siswaCtrl.GetSiswaByID)
+		siswaRoutes.PUT("/:id", siswaCtrl.UpdateSiswa)
+		siswaRoutes.DELETE("/:id", siswaCtrl.DeleteSiswa)
+	}
+
 	return router
 }
