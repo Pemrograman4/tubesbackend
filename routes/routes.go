@@ -53,8 +53,8 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	guruCtrl := controllers.GuruController{DB: db}
 	guruRoutes := router.Group("/gurus")
 	{
-		guruRoutes.GET("/", guruCtrl.GetAllGuru)
-		guruRoutes.POST("/", guruCtrl.CreateGuru)
+		guruRoutes.GET("", guruCtrl.GetAllGuru)
+		guruRoutes.POST("", guruCtrl.CreateGuru)
 		guruRoutes.GET("/:id", guruCtrl.GetGuruByID)
 		guruRoutes.PUT("/:id", guruCtrl.UpdateGuru)
 		guruRoutes.DELETE("/:id", guruCtrl.DeleteGuru)
