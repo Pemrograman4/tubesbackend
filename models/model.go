@@ -34,8 +34,7 @@ type Guru struct {
 	PhoneNumber   string             `bson:"phonenumber,omitempty" json:"phonenumber,omitempty"`
 	Email         string             `bson:"email,omitempty" json:"email,omitempty"`
 	SchoolSubject string             `bson:"school_subject,omitempty" json:"school_subject,omitempty"`
-	Status        string             `bson:"status,omitempty" json:"status,omitempty"` // "aktif" or "nonaktif"
-	JoinedAt      primitive.DateTime `bson:"joined_at,omitempty" json:"joined_at,omitempty"`
+	Status        string             `bson:"status,omitempty" json:"status,omitempty"` // "aktif" atau "nonaktif"
 }
 
 type Tagihan struct {

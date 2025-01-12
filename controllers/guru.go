@@ -3,10 +3,8 @@ package controllers
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/organisasi/tubesbackend/models"
-
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -41,14 +39,29 @@ func (ctrl *GuruController) GetAllGuru(c *gin.Context) {
 
 // CreateGuru creates a new Guru record.
 func (ctrl *GuruController) CreateGuru(c *gin.Context) {
-	var guru models.Guru
-	if err := c.ShouldBindJSON(&guru); err != nil {
+	var guruInput struct {
+		FullName      string `json:"fullname"`
+		Address       string `json:"address"`
+		PhoneNumber   string `json:"phonenumber"`
+		Email         string `json:"email"`
+		SchoolSubject string `json:"school_subject"`
+		Status        string `json:"status"`
+	}
+
+	if err := c.ShouldBindJSON(&guruInput); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	guru.ID = primitive.NewObjectID()
-	guru.JoinedAt = primitive.NewDateTimeFromTime(time.Now())
+	guru := models.Guru{
+		ID:            primitive.NewObjectID(),
+		FullName:      guruInput.FullName,
+		Address:       guruInput.Address,
+		PhoneNumber:   guruInput.PhoneNumber,
+		Email:         guruInput.Email,
+		SchoolSubject: guruInput.SchoolSubject,
+		Status:        guruInput.Status,
+	}
 
 	_, err := ctrl.DB.Collection("gurus").InsertOne(context.TODO(), guru)
 	if err != nil {
@@ -87,17 +100,30 @@ func (ctrl *GuruController) UpdateGuru(c *gin.Context) {
 		return
 	}
 
-	var updateData models.Guru
+	var updateData struct {
+		FullName      string `json:"fullname"`
+		Address       string `json:"address"`
+		PhoneNumber   string `json:"phonenumber"`
+		Email         string `json:"email"`
+		SchoolSubject string `json:"school_subject"`
+		Status        string `json:"status"`
+	}
+
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	_, err = ctrl.DB.Collection("gurus").UpdateOne(
-		context.TODO(),
-		bson.M{"_id": objID},
-		bson.M{"$set": updateData},
-	)
+	update := bson.M{
+		"fullname":       updateData.FullName,
+		"address":        updateData.Address,
+		"phonenumber":    updateData.PhoneNumber,
+		"email":          updateData.Email,
+		"school_subject": updateData.SchoolSubject,
+		"status":         updateData.Status,
+	}
+
+	_, err = ctrl.DB.Collection("gurus").UpdateOne(context.TODO(), bson.M{"_id": objID}, bson.M{"$set": update})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Guru"})
 		return
