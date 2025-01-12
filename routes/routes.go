@@ -39,11 +39,6 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
     // Tambahkan route baru untuk mendapatkan ID kursus terbaru
     courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
 }
-	
-// Tambahkan route baru untuk mendapatkan ID kursus terbaru
-courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
-}
-	
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
 	siswaRoutes := router.Group("/siswa")
@@ -54,4 +49,5 @@ courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
 		siswaRoutes.PUT("/:id", siswaCtrl.UpdateSiswa)
 		
 	return router
+}
 }
