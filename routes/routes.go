@@ -3,8 +3,8 @@ package routes
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
 	"github.com/organisasi/tubesbackend/controllers"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func SetupRoutes(db *mongo.Database) *gin.Engine {
@@ -14,8 +14,8 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://127.0.0.1:5504", "http://localhost:5504"}, // Domain frontend
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},        // Metode HTTP yang diperbolehkan
-		AllowHeaders:     []string{"Content-Type", "Authorization"},                 // Header yang diizinkan
-		ExposeHeaders:    []string{"Content-Length"},                                // Header yang diizinkan untuk diakses di frontend
+		AllowHeaders:     []string{"Content-Type", "Authorization"},                  // Header yang diizinkan
+		ExposeHeaders:    []string{"Content-Length"},                                 // Header yang diizinkan untuk diakses di frontend
 		AllowCredentials: true,
 	}))
 
@@ -32,18 +32,12 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	courseRoutes := router.Group("/courses")
 	{
 		courseRoutes.POST("", courseCtrl.CreateCourse)
-    courseRoutes.GET("", courseCtrl.GetCourses)
-    courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
-    courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
+		courseRoutes.GET("", courseCtrl.GetCourses)
+		courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
+		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
+		courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
+	}
 
-    // Tambahkan route baru untuk mendapatkan ID kursus terbaru
-    courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
-}
-	
-// Tambahkan route baru untuk mendapatkan ID kursus terbaru
-courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
-}
-	
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
 	siswaRoutes := router.Group("/siswa")
@@ -52,6 +46,18 @@ courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
 		siswaRoutes.GET("", siswaCtrl.GetSiswa)
 		siswaRoutes.GET("/:id", siswaCtrl.GetSiswaByID)
 		siswaRoutes.PUT("/:id", siswaCtrl.UpdateSiswa)
-		
+	}
+
+	// Guru routes
+	guruCtrl := controllers.GuruController{DB: db}
+	guruRoutes := router.Group("/gurus")
+	{
+		guruRoutes.GET("/", guruCtrl.GetAllGuru)
+		guruRoutes.POST("/", guruCtrl.CreateGuru)
+		guruRoutes.GET("/:id", guruCtrl.GetGuruByID)
+		guruRoutes.PUT("/:id", guruCtrl.UpdateGuru)
+		guruRoutes.DELETE("/:id", guruCtrl.DeleteGuru)
+	}
+
 	return router
 }
