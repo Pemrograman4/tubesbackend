@@ -21,7 +21,12 @@ type SiswaController struct {
 func (sc *SiswaController) CreateSiswa(c *gin.Context) {
 	var siswa models.Siswa
 	if err := c.ShouldBindJSON(&siswa); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		return
+	}
+
+	if siswa.FullName == "" || siswa.Address == "" || siswa.PhoneNumber == "" || siswa.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
 		return
 	}
 
@@ -32,7 +37,7 @@ func (sc *SiswaController) CreateSiswa(c *gin.Context) {
 
 	result, err := collection.InsertOne(ctx, siswa)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create siswa: " + err.Error()})
 		return
 	}
 
@@ -47,14 +52,19 @@ func (sc *SiswaController) GetSiswa(c *gin.Context) {
 
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch siswa: " + err.Error()})
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var siswaList []models.Siswa
 	if err = cursor.All(ctx, &siswaList); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse siswa data: " + err.Error()})
+		return
+	}
+
+	if len(siswaList) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "No students found"})
 		return
 	}
 
@@ -95,7 +105,12 @@ func (sc *SiswaController) UpdateSiswa(c *gin.Context) {
 
 	var siswa models.Siswa
 	if err := c.ShouldBindJSON(&siswa); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+		return
+	}
+
+	if siswa.FullName == "" || siswa.Address == "" || siswa.PhoneNumber == "" || siswa.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
 		return
 	}
 
@@ -115,7 +130,7 @@ func (sc *SiswaController) UpdateSiswa(c *gin.Context) {
 
 	_, err = collection.UpdateOne(ctx, bson.M{"_id": objID}, update)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update siswa: " + err.Error()})
 		return
 	}
 
@@ -137,7 +152,7 @@ func (sc *SiswaController) DeleteSiswa(c *gin.Context) {
 
 	_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete siswa: " + err.Error()})
 		return
 	}
 
