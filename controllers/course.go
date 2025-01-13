@@ -103,12 +103,31 @@ func (cc *CourseController) UpdateCourse(c *gin.Context) {
 // DeleteCourse menghapus data kursus berdasarkan ID
 func (cc *CourseController) DeleteCourse(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validasi apakah ID adalah ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		// Jika ID bukan ObjectID, validasi sebagai string biasa
+		result, deleteErr := cc.DB.Collection("courses").DeleteOne(
+			c.Request.Context(),
+			bson.M{"id": id}, // Gunakan kolom "id" yang sesuai di MongoDB
+		)
+
+		if deleteErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete course"})
+			return
+		}
+
+		if result.DeletedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Course deleted successfully"})
 		return
 	}
 
+	// Jika ID valid sebagai ObjectID, lanjutkan proses penghapusan
 	collection := cc.DB.Collection("courses")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
