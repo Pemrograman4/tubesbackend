@@ -32,13 +32,13 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	courseRoutes := router.Group("/courses")
 	{
 		courseRoutes.POST("", courseCtrl.CreateCourse)
-    courseRoutes.GET("", courseCtrl.GetCourses)
-    courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
-    courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
+		courseRoutes.GET("", courseCtrl.GetCourses)
+		courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
+		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
 
-    // Tambahkan route baru untuk mendapatkan ID kursus terbaru
-    courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
-}
+		// Tambahkan route baru untuk mendapatkan ID kursus terbaru
+		courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
+	}
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
 	siswaRoutes := router.Group("/siswa")
@@ -48,6 +48,17 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		siswaRoutes.GET("/:id", siswaCtrl.GetSiswaByID)
 		siswaRoutes.PUT("/:id", siswaCtrl.UpdateSiswa)
 		siswaRoutes.DELETE("/:id", siswaCtrl.DeleteSiswa)
+
+	}
+	// Guru routes
+	guruCtrl := controllers.GuruController{DB: db}
+	guruRoutes := router.Group("/gurus")
+	{
+		guruRoutes.GET("", guruCtrl.GetAllGuru)
+		guruRoutes.POST("", guruCtrl.CreateGuru)
+		guruRoutes.GET("/:id", guruCtrl.GetGuruByID)
+		guruRoutes.PUT("/:id", guruCtrl.UpdateGuru)
+		guruRoutes.DELETE("/:id", guruCtrl.DeleteGuru)
+	}
 	return router
-}
 }
