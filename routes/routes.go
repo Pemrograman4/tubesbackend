@@ -48,6 +48,7 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		siswaRoutes.GET("", siswaCtrl.GetSiswa)
 		siswaRoutes.GET("/:id", siswaCtrl.GetSiswaByID)
 		siswaRoutes.PUT("/:id", siswaCtrl.UpdateSiswa)
+		siswaRoutes.DELETE("/:id", siswaCtrl.DeleteSiswa)
 
 	}
 	// Guru routes
