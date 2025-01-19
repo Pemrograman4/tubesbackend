@@ -28,17 +28,18 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	}
 
 	// Course routes
-	courseCtrl := controllers.CourseController{DB: db}
-	courseRoutes := router.Group("/courses")
-	{
-		courseRoutes.POST("", courseCtrl.CreateCourse)
-		courseRoutes.GET("", courseCtrl.GetCourses)
-		courseRoutes.PUT("/:id", courseCtrl.UpdateCourse)
-		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
+courseCtrl := controllers.CourseController{DB: db}
+courseRoutes := router.Group("/courses")
+{
+	courseRoutes.POST("", courseCtrl.CreateCourse)           // Tambah kursus baru
+	courseRoutes.GET("", courseCtrl.GetCourses)             // Dapatkan semua kursus
+	courseRoutes.GET("/:id", courseCtrl.FindCourseById)     // Cari kursus berdasarkan ID
+	courseRoutes.PUT("/:id", courseCtrl.UpdateCourseById)   // Perbarui kursus berdasarkan ID
+	courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)    // Hapus kursus berdasarkan ID
 
-		// Tambahkan route baru untuk mendapatkan ID kursus terbaru
-		courseRoutes.GET("/latest-id", courseCtrl.GetLatestCourseId)
-	}
+	// Route untuk mendapatkan ID kursus berikutnya
+	courseRoutes.GET("/next-id", courseCtrl.GetNextCourseId)
+}
 	
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
