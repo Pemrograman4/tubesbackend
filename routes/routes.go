@@ -28,19 +28,19 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	}
 
 	// Course routes
-courseCtrl := controllers.CourseController{DB: db}
-courseRoutes := router.Group("/courses")
-{
-	courseRoutes.POST("", courseCtrl.CreateCourse)           // Tambah kursus baru
-	courseRoutes.GET("", courseCtrl.GetCourses)             // Dapatkan semua kursus
-	courseRoutes.GET("/:id", courseCtrl.FindCourseById)     // Cari kursus berdasarkan ID
-	courseRoutes.PUT("/:id", courseCtrl.UpdateCourseById)   // Perbarui kursus berdasarkan ID
-	courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)    // Hapus kursus berdasarkan ID
+	courseCtrl := controllers.CourseController{DB: db}
+	courseRoutes := router.Group("/courses")
+	{
+		courseRoutes.POST("", courseCtrl.CreateCourse)        // Tambah kursus baru
+		courseRoutes.GET("", courseCtrl.GetCourses)           // Dapatkan semua kursus
+		courseRoutes.GET("/:id", courseCtrl.FindCourseById)   // Cari kursus berdasarkan ID
+		courseRoutes.PUT("/:id", courseCtrl.UpdateCourseById) // Perbarui kursus berdasarkan ID
+		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)  // Hapus kursus berdasarkan ID
 
-	// Route untuk mendapatkan ID kursus berikutnya
-	courseRoutes.GET("/next-id", courseCtrl.GetNextCourseId)
-}
-	
+		// Route untuk mendapatkan ID kursus berikutnya
+		courseRoutes.GET("/next-id", courseCtrl.GetNextCourseId)
+	}
+
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
 	siswaRoutes := router.Group("/siswa")
@@ -61,6 +61,17 @@ courseRoutes := router.Group("/courses")
 		guruRoutes.GET("/:id", guruCtrl.GetGuruByID)
 		guruRoutes.PUT("/:id", guruCtrl.UpdateGuru)
 		guruRoutes.DELETE("/:id", guruCtrl.DeleteGuru)
+	}
+
+	// Tagihan routes
+	tagihanCtrl := controllers.TagihanController{DB: db}
+	tagihanRoutes := router.Group("/tagihan")
+	{
+		tagihanRoutes.GET("", tagihanCtrl.GetTagihan)
+		tagihanRoutes.GET("/:id", tagihanCtrl.GetTagihanByID)
+		tagihanRoutes.POST("", tagihanCtrl.CreateTagihan)
+		tagihanRoutes.PUT("/:id", tagihanCtrl.UpdateTagihan)
+		tagihanRoutes.DELETE("/:id", tagihanCtrl.DeleteTagihan)
 	}
 	return router
 }
