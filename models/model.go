@@ -54,4 +54,5 @@ type Tagihan struct {
 	Paid         bool               `bson:"paid" json:"paid"` // Status pembayaran
 	PaidAt       primitive.DateTime `bson:"paid_at,omitempty" json:"paid_at,omitempty"` // Jika sudah dibayar
 	CreatedAt    primitive.DateTime `bson:"created_at" json:"created_at"`
+	Status       string             `bson:"status" json:"status"`
 }
