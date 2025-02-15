@@ -24,3 +24,25 @@ func GenerateJWT(userID, role string) (string, error) {
 	}
 	return signedToken, nil
 }
+
+// VerifyJWT untuk memverifikasi dan mengekstrak claims dari token JWT
+func VerifyJWT(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Pastikan algoritma yang digunakan benar
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return jwtSecret, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Ambil claims jika token valid
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, jwt.ErrSignatureInvalid
+}

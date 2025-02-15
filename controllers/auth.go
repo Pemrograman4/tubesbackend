@@ -25,6 +25,12 @@ func (ctrl *AuthController) Register(c *gin.Context) {
 		return
 	}
 
+	// Validasi semua kolom harus diisi
+	if input.Username == "" || input.Email == "" || input.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Username, email, dan password harus diisi"})
+		return
+	}
+
 	// Hash password
 	hashedPassword, err := utils.HashPassword(input.Password)
 	if err != nil {
@@ -38,19 +44,24 @@ func (ctrl *AuthController) Register(c *gin.Context) {
 	input.Status = "inactive"
 	input.CreatedAt = time.Now()
 
-	// Check if username exists
+	// Check if username or email exists
 	userCollection := ctrl.DB.Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	count, err := userCollection.CountDocuments(ctx, bson.M{"username": input.Username})
+	filter := bson.M{"$or": []bson.M{
+		{"username": input.Username},
+		{"email": input.Email},
+	}}
+
+	count, err := userCollection.CountDocuments(ctx, filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan saat memeriksa username"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Terjadi kesalahan saat memeriksa username atau email"})
 		return
 	}
 
 	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+		c.JSON(http.StatusConflict, gin.H{"error": "Username atau email sudah digunakan"})
 		return
 	}
 
@@ -88,6 +99,12 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		return
 	}
 
+	// Cek status aktif
+	if user.Status != "active" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "User is not active"})
+		return
+	}
+
 	// Verifikasi password
 	if !utils.CheckPasswordHash(input.Password, user.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
@@ -101,10 +118,12 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		return
 	}
 
+	// Simpan token di cookie
+	c.SetCookie("auth_token", token, 3600, "/", "", false, true)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
-		"token":   token,
-		"user":    user,
+		"token": token,
 	})
 }
 
@@ -137,6 +156,25 @@ func (ctrl *AuthController) UpdateUserStatus(c *gin.Context) {
 	userCollection := ctrl.DB.Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	// Ambil user yang sedang melakukan request dari context
+	authUser, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	loggedInUser, ok := authUser.(models.User)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user data"})
+		return
+	}
+
+	// Hanya admin yang boleh mengubah status user lain
+	if loggedInUser.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
 
 	// Update status user
 	update := bson.M{"$set": bson.M{"status": input.Status}}
