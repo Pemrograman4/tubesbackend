@@ -1,13 +1,21 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+
+	"time"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type User struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty"`
 	Username string             `bson:"username"`
 	Email    string             `bson:"email"`
 	Password string             `bson:"password"`
+	Role     string             `bson:"role"`   // Contoh: "admin", "user"
+	Status   string             `bson:"status"` // Contoh: "active", "inactive"
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
+
 
 type Course struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`

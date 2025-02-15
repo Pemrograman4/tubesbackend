@@ -3,15 +3,24 @@ package utils
 import (
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("your_secret_key")
+// Secret key untuk JWT
+var jwtSecret = []byte("your-secret-key")
 
-func GenerateToken(username string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": username,
-		"exp":      time.Now().Add(24 * time.Hour).Unix(),
-	})
-	return token.SignedString(jwtKey)
+// GenerateJWT untuk membuat token JWT dengan UserID dan Role
+func GenerateJWT(userID, role string) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"role":    role,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Token berlaku 24 jam
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString(jwtSecret)
+	if err != nil {
+		return "", err
+	}
+	return signedToken, nil
 }
