@@ -74,6 +74,9 @@ authRoutes := router.Group("/auth")
 		tagihanRoutes.POST("", tagihanCtrl.CreateTagihan)
 		tagihanRoutes.PUT("/:id", tagihanCtrl.UpdateTagihan)
 		tagihanRoutes.DELETE("/:id", tagihanCtrl.DeleteTagihan)
+		// Route untuk membayar tagihan
+		tagihanRoutes.PUT("/:id/bayar", tagihanCtrl.BayarTagihan)
+		tagihanRoutes.GET("/user", tagihanCtrl.GetTagihanByUser)
 	}
 	return router
 }
