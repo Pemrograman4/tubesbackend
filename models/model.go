@@ -7,12 +7,12 @@ import (
 )
 
 type User struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"` 
-	Username string             `bson:"username" json:"username"`
-	Email    string             `bson:"email" json:"email"`
-	Password string             `bson:"password" json:"password"`
-	Role     string             `bson:"role" json:"role"` // "admin" or "user"
-	Status   string             `bson:"status" json:"status"` // "active" or "inactive"
+	ID       primitive.ObjectID `bson:"_id,omitempty"`
+	Username string             `bson:"username"`
+	Email    string             `bson:"email"`
+	Password string             `bson:"password"`
+	Role     string             `bson:"role"`   // Contoh: "admin", "user"
+	Status   string             `bson:"status"` // Contoh: "active", "inactive"
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
@@ -32,9 +32,17 @@ type Siswa struct {
 	Address     string             `bson:"address,omitempty" json:"address,omitempty"`
 	PhoneNumber string             `bson:"phonenumber,omitempty" json:"phonenumber,omitempty"`
 	Email       string             `bson:"email,omitempty" json:"email,omitempty"`
-	Status      string             `bson:"status,omitempty" json:"status,omitempty"` // "aktif" or "nonaktif"
+	Status      string             `bson:"status,omitempty" json:"status,omitempty"`   // "aktif" or "nonaktif"
 }
-
+type TransaksiSiswa struct {
+	ID      primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	SiswaID primitive.ObjectID `bson:"siswa_id" json:"siswa_id"`
+	Item    string             `bson:"item" json:"item"`
+	Harga   float64            `bson:"harga" json:"harga"`
+	Tanggal primitive.DateTime `bson:"tanggal" json:"tanggal"`
+	Status  string             `bson:"status" json:"status"`
+  }
+  
 type Guru struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	FullName      string             `bson:"fullname,omitempty" json:"fullname,omitempty"`
