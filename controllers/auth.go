@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/organisasi/tubesbackend/models"
+	"github.com/organisasi/tubesbackend/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"github.com/organisasi/tubesbackend/models"
-	"github.com/organisasi/tubesbackend/utils"
 )
 
 type AuthController struct {
@@ -119,12 +119,14 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	// Simpan token di cookie
-	c.SetCookie("auth_token", token, 3600, "/", "", false, true)
+	c.SetCookie("auth_token", token, 3600, "/", "", false, true) 
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
-		"token": token,
+		"token":   token,
+		"role":    user.Role, // Pastikan ini ada!
 	})
+
 }
 
 // Update status user (aktif/inaktif) oleh admin

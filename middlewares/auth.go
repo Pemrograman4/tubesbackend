@@ -16,12 +16,23 @@ import (
 
 func AuthMiddleware(db *mongo.Database) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString, err := c.Cookie("auth_token")
-		if err != nil {
+		// Ambil token dari header Authorization
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token required"})
 			c.Abort()
 			return
 		}
+
+		// Format Authorization: "Bearer <token>", kita ambil bagian setelah "Bearer "
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
+			c.Abort()
+			return
+		}
+
+		tokenString := tokenParts[1]
 
 		// Verifikasi token JWT
 		claims, err := utils.VerifyJWT(tokenString)

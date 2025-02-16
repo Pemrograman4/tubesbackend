@@ -7,12 +7,12 @@ import (
 )
 
 type User struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty"`
-	Username string             `bson:"username"`
-	Email    string             `bson:"email"`
-	Password string             `bson:"password"`
-	Role     string             `bson:"role"`   // Contoh: "admin", "user"
-	Status   string             `bson:"status"` // Contoh: "active", "inactive"
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"` 
+	Username string             `bson:"username" json:"username"`
+	Email    string             `bson:"email" json:"email"`
+	Password string             `bson:"password" json:"password"`
+	Role     string             `bson:"role" json:"role"` // "admin" or "user"
+	Status   string             `bson:"status" json:"status"` // "active" or "inactive"
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
