@@ -37,11 +37,12 @@ type Siswa struct {
 type TransaksiSiswa struct {
 	ID      primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	SiswaID primitive.ObjectID `bson:"siswa_id" json:"siswa_id"`
+	UserID  primitive.ObjectID `bson:"user_id" json:"user_id"`
 	Item    string             `bson:"item" json:"item"`
 	Harga   float64            `bson:"harga" json:"harga"`
 	Tanggal primitive.DateTime `bson:"tanggal" json:"tanggal"`
 	Status  string             `bson:"status" json:"status"`
-  }
+  }  
   
 type Guru struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
