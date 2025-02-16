@@ -83,6 +83,25 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		tagihanRoutes.PUT("/:id/bayar", tagihanCtrl.BayarTagihan)
 		tagihanRoutes.GET("/user", tagihanCtrl.GetTagihanByUser)
 	}
+// Transaksi Guru Routes
+	transaksiGuruCtrl := controllers.TransaksiGuruController{DB: db}
+	transaksiRoutes := router.Group("/transaksi-guru")
+	// transaksiRoutes.Use(middlewares.AuthMiddleware(db)) // Proteksi dengan autentikasi
+	{
 
+		transaksiRoutes.POST("", transaksiGuruCtrl.CreateTransaksiGuru)
+		transaksiRoutes.GET("", transaksiGuruCtrl.GetAllTransaksiGuru)
+		transaksiRoutes.GET("/:id", transaksiGuruCtrl.GetTransaksiGuruByID)
+		transaksiRoutes.PUT("/:id", transaksiGuruCtrl.UpdateTransaksiGuru)
+		transaksiRoutes.DELETE("/:id", transaksiGuruCtrl.DeleteTransaksiGuru)
+	}
+
+	// Laporan Guru Routes
+	laporanRoutes := router.Group("/laporan-guru")
+	// laporanRoutes.Use(middlewares.AuthMiddleware(db)) 
+	{
+
+		laporanRoutes.GET("/", transaksiGuruCtrl.GenerateLaporan)
+	}
 	return router
 }
