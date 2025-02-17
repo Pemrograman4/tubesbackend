@@ -80,6 +80,7 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		guruRoutes.GET("/:id", guruCtrl.GetGuruByID)
 		guruRoutes.PUT("/:id", guruCtrl.UpdateGuru)
 		guruRoutes.DELETE("/:id", guruCtrl.DeleteGuru)
+		guruRoutes.GET("/status", guruCtrl.GetGuruByStatus) // Get guru by status
 	}
 
 	// Tagihan routes
@@ -94,7 +95,9 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		tagihanRoutes.DELETE("/:id", tagihanCtrl.DeleteTagihan)
 		tagihanRoutes.PUT("/:id/bayar", tagihanCtrl.BayarTagihan)
 		tagihanRoutes.GET("/user", tagihanCtrl.GetTagihanByUser)
+		tagihanRoutes.GET("/laporan", tagihanCtrl.GetLaporanTagihan)
 	}
+
 	// Transaksi Guru Routes
 	transaksiGuruCtrl := controllers.TransaksiGuruController{DB: db}
 	transaksiRoutes := router.Group("/transaksi-guru")

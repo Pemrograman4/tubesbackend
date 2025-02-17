@@ -48,10 +48,10 @@ func (sc *TagihanController) GetTagihan(c *gin.Context) {
 
 func (ctrl *TagihanController) CreateTagihan(c *gin.Context) {
 	var tagihanInput struct {
-		SiswaID  string `json:"siswa_id"`
-		CourseID string `json:"course_id"`
-		DueDate  string `json:"due_date"` // Format: "YYYY-MM-DD"
-	}
+    SiswaID  string `json:"siswa_id"`
+    CourseID string `json:"course_id"`
+    DueDate  string `json:"due_date"` // Format: "YYYY-MM-DD"
+}
 
 	// Validate input
 	if err := c.ShouldBindJSON(&tagihanInput); err != nil {
@@ -59,7 +59,7 @@ func (ctrl *TagihanController) CreateTagihan(c *gin.Context) {
 		return
 	}
 
-	// Convert string IDs to MongoDB types
+	// Convert string IDs to MongoDB ObjectIDs
 	siswaID, err := primitive.ObjectIDFromHex(tagihanInput.SiswaID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid SiswaID"})
@@ -72,7 +72,15 @@ func (ctrl *TagihanController) CreateTagihan(c *gin.Context) {
 		return
 	}
 
-	// Fetch course to get amount
+	// Fetch siswa data (ambil nama & email)
+	var siswa models.Siswa
+	err = ctrl.DB.Collection("siswa").FindOne(context.TODO(), bson.M{"_id": siswaID}).Decode(&siswa)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Siswa not found"})
+		return
+	}
+
+	// Fetch course data (ambil nama & harga)
 	var course models.Course
 	err = ctrl.DB.Collection("courses").FindOne(context.TODO(), bson.M{"_id": courseID}).Decode(&course)
 	if err != nil {
@@ -83,28 +91,28 @@ func (ctrl *TagihanController) CreateTagihan(c *gin.Context) {
 	// Determine due date
 	var dueDateTime time.Time
 	if tagihanInput.DueDate == "" {
-		// Default: 7 days from now
-		dueDateTime = time.Now().AddDate(0, 0, 7)
+		dueDateTime = time.Now().AddDate(0, 0, 7) // Default: 7 hari dari sekarang
 	} else {
-		// Parse provided due date with format "YYYY-MM-DD"
 		dueDateTime, err = time.Parse("2006-01-02", tagihanInput.DueDate)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid DueDate format. Use 'YYYY-MM-DD'"})
 			return
 		}
 	}
-
-	// Convert to primitive.DateTime
 	dueDate := primitive.NewDateTimeFromTime(dueDateTime)
 
-	// Create a new Tagihan object
+	// Create tagihan dengan data siswa & course
 	tagihan := models.Tagihan{
 		ID:        primitive.NewObjectID(),
 		SiswaID:   siswaID,
+		SiswaNama: siswa.FullName,
+		SiswaEmail: siswa.Email,
 		CourseID:  courseID,
-		Amount:    course.Cost, // Set amount from course cost
+		CourseName: course.Name,
+		Amount:    course.Cost,
 		DueDate:   dueDate,
 		Paid:      false,
+		Status:    "Belum Bayar", // Set default status saat tagihan dibuat
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
@@ -115,38 +123,63 @@ func (ctrl *TagihanController) CreateTagihan(c *gin.Context) {
 		return
 	}
 
+	// Response
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Tagihan created successfully",
 		"tagihan": tagihan,
 	})
 }
+
 func (sc *TagihanController) GetTagihanByUser(c *gin.Context) {
-    // Ambil userID dari konteks (misalnya dari token JWT)
-    userID := c.GetString("userID")
-    if userID == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-        return
-    }
+	// Ambil user_id dari context yang disimpan di middleware
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
 
-    collection := sc.DB.Collection("tagihans")
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	// Konversi userID ke ObjectID
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID format"})
+		return
+	}
 
-    // Cari semua tagihan berdasarkan userID
-    cursor, err := collection.Find(ctx, bson.M{"user_id": userID})
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tagihans"})
-        return
-    }
-    defer cursor.Close(ctx)
+	// Cari user berdasarkan ID
+	var user models.User
+	err = sc.DB.Collection("users").FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
 
-    var tagihans []models.Tagihan
-    if err = cursor.All(ctx, &tagihans); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode tagihans"})
-        return
-    }
+	// Cari siswa berdasarkan email
+	var siswa models.Siswa
+	err = sc.DB.Collection("siswa").FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&siswa)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Siswa not found"})
+		return
+	}
 
-    c.JSON(http.StatusOK, tagihans)
+	// Cari semua tagihan berdasarkan email siswa
+	collection := sc.DB.Collection("tagihans")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := collection.Find(ctx, bson.M{"siswa_email": siswa.Email}) // Gunakan email
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tagihans"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var tagihans []models.Tagihan
+	if err = cursor.All(ctx, &tagihans); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode tagihans"})
+		return
+	}
+
+	c.JSON(http.StatusOK, tagihans)
 }
 
 // GetTagihanByID mengambil data siswa berdasarkan ID
@@ -180,12 +213,20 @@ func (ctrl *TagihanController) BayarTagihan(c *gin.Context) {
 		return
 	}
 
-	// Perbarui status menjadi Lunas
+	// Waktu saat ini
+	now := primitive.NewDateTimeFromTime(time.Now())
+
+	// Perbarui status menjadi Lunas, serta set paid_at dan updated_at
 	collection := ctrl.DB.Collection("tagihans")
 	_, err = collection.UpdateOne(
 		context.TODO(),
 		bson.M{"_id": objID},
-		bson.M{"$set": bson.M{"paid": true}},
+		bson.M{"$set": bson.M{
+			"paid":      true,
+			"status":    "Lunas",
+			"paid_at":   now,
+			"updated_at": now,
+		}},
 	)
 
 	if err != nil {
@@ -193,10 +234,9 @@ func (ctrl *TagihanController) BayarTagihan(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Tagihan updated to Lunas"})
+	c.JSON(http.StatusOK, gin.H{"message": "Tagihan updated to Lunas", "paid_at": now, "updated_at": now})
 }
 
-// UpdateTagihan memperbarui data tagihan berdasarkan ID
 func (ctrl *TagihanController) UpdateTagihan(c *gin.Context) {
 	id := c.Param("id")
 	objID, err := primitive.ObjectIDFromHex(id)
@@ -205,83 +245,40 @@ func (ctrl *TagihanController) UpdateTagihan(c *gin.Context) {
 		return
 	}
 
-	var tagihanInput struct {
-		SiswaID  string  `json:"siswa_id"`
-		CourseID string  `json:"course_id"`
-		Amount   float64 `json:"amount"`
-		DueDate  string  `json:"due_date"` // Format ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)
-	}
-
-	// Validate input
-	if err := c.ShouldBindJSON(&tagihanInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input: " + err.Error()})
+	// Parse request body untuk mendapatkan data yang ingin diupdate
+	var updateData map[string]interface{}
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	// Convert string IDs to MongoDB types
-	siswaID, err := primitive.ObjectIDFromHex(tagihanInput.SiswaID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid SiswaID"})
-		return
+	// Jika due_date ada, konversi string ke DateTime
+	if dueDateStr, exists := updateData["due_date"].(string); exists {
+		dueDateTime, err := time.Parse("2006-01-02", dueDateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid DueDate format. Use 'YYYY-MM-DD'"})
+			return
+		}
+		updateData["due_date"] = primitive.NewDateTimeFromTime(dueDateTime)
 	}
 
-	courseID, err := primitive.ObjectIDFromHex(tagihanInput.CourseID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CourseID"})
-		return
-	}
+	// Pastikan updated_at tidak diambil dari input user
+	updateData["updated_at"] = primitive.NewDateTimeFromTime(time.Now())
 
-	// Parse due date
-	dueDateTime, err := time.Parse(time.RFC3339, tagihanInput.DueDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid DueDate format"})
-		return
-	}
-
-	// Convert to primitive.DateTime
-	dueDate := primitive.NewDateTimeFromTime(dueDateTime)
-
+	// Perbarui tagihan berdasarkan data yang diberikan
 	collection := ctrl.DB.Collection("tagihans")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	_, err = collection.UpdateOne(
+		context.TODO(),
+		bson.M{"_id": objID},
+		bson.M{"$set": updateData},
+	)
 
-	// Hanya memperbarui data yang diperbolehkan
-	update := bson.M{
-		"$set": bson.M{
-			"siswa_id":  siswaID,
-			"course_id": courseID,
-			"amount":    tagihanInput.Amount,
-			"due_date":  dueDate,
-		},
-	}
-
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": objID}, update)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update tagihan: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update tagihan"})
 		return
 	}
 
-	// Mengambil status terbaru dari database (jika perlu)
-	var tagihan struct {
-		Paid bool `bson:"paid"`
-	}
-	err = collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&tagihan)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated tagihan"})
-		return
-	}
-
-	// Tentukan status berdasarkan field Paid
-	tagihanStatus := "Belum Lunas"
-	if tagihan.Paid {
-		tagihanStatus = "Lunas"
-	}
-
-	// Response dengan status
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Tagihan updated successfully",
-		"status":  tagihanStatus,
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Tagihan updated successfully"})
 }
 
 // DeleteTagihan menghapus data tagihan berdasarkan ID
@@ -304,4 +301,36 @@ func (ctrl *TagihanController) DeleteTagihan(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Tagihan deleted successfully"})
+}
+
+func (ctrl *TagihanController) GetLaporanTagihan(c *gin.Context) {
+    status := c.QueryArray("status") // Mengambil status dari query parameter, bisa kosong
+    startDate, _ := time.Parse("2006-01-02", c.Query("start_date"))
+    endDate, _ := time.Parse("2006-01-02", c.Query("end_date"))
+    filter := bson.M{}
+
+    // Jika ada status yang diterima, lakukan filter berdasarkan status
+    if len(status) > 0 {
+        filter["status"] = bson.M{"$in": status}
+    }
+
+    // Jika ada rentang tanggal, filter berdasarkan tanggal
+    if !startDate.IsZero() && !endDate.IsZero() {
+        filter["created_at"] = bson.M{"$gte": startDate, "$lte": endDate}
+    }
+
+    collection := ctrl.DB.Collection("tagihans")
+    cursor, err := collection.Find(context.TODO(), filter)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil laporan"})
+        return
+    }
+
+    var tagihans []models.Tagihan
+    if err = cursor.All(context.TODO(), &tagihans); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membaca data"})
+        return
+    }
+
+    c.JSON(http.StatusOK, tagihans)
 }

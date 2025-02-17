@@ -66,13 +66,17 @@ type Guru struct {
 }
 
 type Tagihan struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	SiswaID   primitive.ObjectID `bson:"siswa_id" json:"siswa_id"`
-	CourseID  primitive.ObjectID `bson:"course_id" json:"course_id"`
-	Amount    float64            `bson:"amount" json:"amount"`                       // Total tagihan
-	DueDate   primitive.DateTime `bson:"due_date" json:"due_date"`                   // Tanggal jatuh tempo
-	Paid      bool               `bson:"paid" json:"paid"`                           // Status pembayaran
-	PaidAt    primitive.DateTime `bson:"paid_at,omitempty" json:"paid_at,omitempty"` // Jika sudah dibayar
-	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
-	Status    string             `bson:"status" json:"status"`
+    ID         primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+    SiswaID    primitive.ObjectID `bson:"siswa_id" json:"siswa_id"`
+    SiswaNama  string             `bson:"siswa_nama" json:"siswa_nama"`
+    SiswaEmail string             `bson:"siswa_email" json:"siswa_email"`
+    CourseID   primitive.ObjectID `bson:"course_id" json:"course_id"`
+    CourseName string             `bson:"course_name" json:"course_name"`
+    Amount     float64            `bson:"amount" json:"amount"`
+    DueDate    primitive.DateTime `bson:"due_date" json:"due_date"`
+    Paid       bool               `bson:"paid" json:"paid"`
+    Status     string             `bson:"status" json:"status"` // Tambahkan status di database
+    PaidAt     *primitive.DateTime `bson:"paid_at,omitempty" json:"paid_at,omitempty"`
+    CreatedAt  primitive.DateTime `bson:"created_at" json:"created_at"`
+    UpdatedAt  primitive.DateTime `bson:"updated_at" json:"updated_at"`
 }

@@ -36,6 +36,39 @@ func (ctrl *GuruController) GetAllGuru(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gurus)
 }
+// GetGuruByStatus retrieves Guru records based on their status (e.g., active).
+func (ctrl *GuruController) GetGuruByStatus(c *gin.Context) {
+	status := c.DefaultQuery("status", "") // Mendapatkan nilai status dari query parameter, default ke "" jika tidak ada
+
+	if status == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status parameter is required"})
+		return
+	}
+
+	var gurus []models.Guru
+	cursor, err := ctrl.DB.Collection("gurus").Find(context.TODO(), bson.M{"status": status})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch data"})
+		return
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var guru models.Guru
+		if err := cursor.Decode(&guru); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding data"})
+			return
+		}
+		gurus = append(gurus, guru)
+	}
+
+	if len(gurus) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No gurus found with the given status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gurus)
+}
 
 // CreateGuru creates a new Guru record.
 func (ctrl *GuruController) CreateGuru(c *gin.Context) {
