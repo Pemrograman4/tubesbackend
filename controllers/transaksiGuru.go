@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/organisasi/tubesbackend/models"
@@ -16,7 +18,6 @@ type TransaksiGuruController struct {
 	DB *mongo.Database
 }
 
-// CreateTransaksiGuru - Membuat transaksi baru untuk guru
 func (ctrl *TransaksiGuruController) CreateTransaksiGuru(c *gin.Context) {
 	var transaksiInput struct {
 		GuruID string  `json:"guru_id"`
@@ -38,6 +39,21 @@ func (ctrl *TransaksiGuruController) CreateTransaksiGuru(c *gin.Context) {
 	loc, _ := time.LoadLocation("Asia/Jakarta")
 	now := time.Now().In(loc)
 	createdAt := now.Format("02-01-2006 15:04:05 WIB")
+	monthYear := now.Format("01-2006") // Format untuk bulan dan tahun
+
+	var existingTransaksi models.TransaksiGuru
+	err = ctrl.DB.Collection("transaksi_guru").FindOne(
+		context.TODO(),
+		bson.M{
+			"guru_id": guruID,
+			"created_at": bson.M{"$regex": monthYear}, // Cari transaksi dalam bulan & tahun yang sama
+		},
+	).Decode(&existingTransaksi)
+
+	if err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Guru ini sudah memiliki transaksi di bulan ini"})
+		return
+	}
 
 	var guru struct {
 		FullName string `bson:"fullname"`
@@ -153,43 +169,40 @@ func (ctrl *TransaksiGuruController) DeleteTransaksiGuru(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Transaction deleted successfully"})
 }
 
-// GenerateLaporan - Menghasilkan laporan transaksi guru dalam rentang tanggal tertentu
-func (ctrl *TransaksiGuruController) GenerateLaporan(c *gin.Context) {
-	startDate := c.Query("start_date")
-	endDate := c.Query("end_date")
+func (ctrl *TransaksiGuruController) GetLaporanGajiGuru(c *gin.Context) {
+    month := c.Query("month") // Format dari frontend: "YYYY-MM"
+    if month == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Month parameter is required"})
+        return
+    }
 
-	// 🔥 Pastikan format tanggal dalam "dd-MM-yyyy"
-	start, err := time.Parse("02-01-2006", startDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format. Use dd-MM-yyyy"})
-		return
-	}
+    // Ekstrak bulan dan tahun dari format "YYYY-MM"
+    parts := strings.Split(month, "-")
+    if len(parts) != 2 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month format"})
+        return
+    }
+    year, monthNum := parts[0], parts[1]
 
-	end, err := time.Parse("02-01-2006", endDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_date format. Use dd-MM-yyyy"})
-		return
-	}
+    // Query untuk mengambil transaksi sesuai bulan dan tahun
+    filter := bson.M{
+        "created_at": bson.M{
+            "$regex": primitive.Regex{Pattern: fmt.Sprintf("^\\d{2}-%s-%s", monthNum, year), Options: "i"},
+        },
+    }
 
-	filter := bson.M{
-		"created_at": bson.M{
-			"$gte": start.Format("02-01-2006 15:04:05 WIB"),
-			"$lte": end.Format("02-01-2006 15:04:05 WIB"),
-		},
-	}
+    var transaksi []models.TransaksiGuru
+    cursor, err := ctrl.DB.Collection("transaksi_guru").Find(context.TODO(), filter)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transactions"})
+        return
+    }
+    defer cursor.Close(context.TODO())
 
-	cursor, err := ctrl.DB.Collection("transaksi_guru").Find(context.TODO(), filter)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate report"})
-		return
-	}
-	defer cursor.Close(context.TODO())
+    if err = cursor.All(context.TODO(), &transaksi); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode transactions"})
+        return
+    }
 
-	var laporan []models.TransaksiGuru
-	if err := cursor.All(context.TODO(), &laporan); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse transactions"})
-		return
-	}
-
-	c.JSON(http.StatusOK, laporan)
+    c.JSON(http.StatusOK, transaksi)
 }
