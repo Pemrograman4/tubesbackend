@@ -252,6 +252,8 @@ func (ctrl *TagihanController) UpdateTagihan(c *gin.Context) {
 		return
 	}
 
+	updateFields := bson.M{}
+
 	// Jika due_date ada, konversi string ke DateTime
 	if dueDateStr, exists := updateData["due_date"].(string); exists {
 		dueDateTime, err := time.Parse("2006-01-02", dueDateStr)
@@ -259,18 +261,55 @@ func (ctrl *TagihanController) UpdateTagihan(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid DueDate format. Use 'YYYY-MM-DD'"})
 			return
 		}
-		updateData["due_date"] = primitive.NewDateTimeFromTime(dueDateTime)
+		updateFields["due_date"] = primitive.NewDateTimeFromTime(dueDateTime)
+	}
+
+	// Jika siswa_id ada, konversi string ke ObjectID dan ambil data siswa
+	if siswaIDStr, exists := updateData["siswa_id"].(string); exists {
+		siswaID, err := primitive.ObjectIDFromHex(siswaIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid siswa_id"})
+			return
+		}
+		updateFields["siswa_id"] = siswaID
+
+		var siswa models.Siswa
+		err = ctrl.DB.Collection("siswa").FindOne(context.TODO(), bson.M{"_id": siswaID}).Decode(&siswa)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Siswa not found"})
+			return
+		}
+		updateFields["siswa_nama"] = siswa.FullName
+		updateFields["siswa_email"] = siswa.Email
+	}
+
+	// Jika course_id ada, konversi string ke ObjectID dan ambil data course
+	if courseIDStr, exists := updateData["course_id"].(string); exists {
+		courseID, err := primitive.ObjectIDFromHex(courseIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid course_id"})
+			return
+		}
+		updateFields["course_id"] = courseID
+
+		var course models.Course
+		err = ctrl.DB.Collection("courses").FindOne(context.TODO(), bson.M{"_id": courseID}).Decode(&course)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
+			return
+		}
+		updateFields["course_name"] = course.Name
 	}
 
 	// Pastikan updated_at tidak diambil dari input user
-	updateData["updated_at"] = primitive.NewDateTimeFromTime(time.Now())
+	updateFields["updated_at"] = primitive.NewDateTimeFromTime(time.Now())
 
 	// Perbarui tagihan berdasarkan data yang diberikan
 	collection := ctrl.DB.Collection("tagihans")
 	_, err = collection.UpdateOne(
 		context.TODO(),
 		bson.M{"_id": objID},
-		bson.M{"$set": updateData},
+		bson.M{"$set": updateFields},
 	)
 
 	if err != nil {

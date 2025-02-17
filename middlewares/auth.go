@@ -71,7 +71,6 @@ func AuthMiddleware(db *mongo.Database) gin.HandlerFunc {
 			return
 		}
 
-		// Simpan user ke context agar bisa digunakan di handler
 		// Simpan user_id di context agar bisa dipakai di controller
 		c.Set("user_id", userID)
 		c.Set("user", user)
