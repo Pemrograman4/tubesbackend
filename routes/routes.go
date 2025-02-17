@@ -52,6 +52,20 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		courseRoutes.GET("/registrations", courseUsersCtrl.GetAllCourseRegistrations) // Dapatkan semua pendaftaran kursus
 
 	}
+
+	// Inisialisasi controller dan rute untuk menangani permintaan
+	scheduleCtrl := controllers.NewScheduleController(db)
+
+	scheduleRoutes := router.Group("/schedules")
+	scheduleRoutes.Use(middlewares.AuthMiddleware(db)) // Proteksi semua route schedule
+	{
+		scheduleRoutes.POST("", scheduleCtrl.AddSchedule)                    // Menambahkan jadwal baru
+		scheduleRoutes.GET("/:courseId", scheduleCtrl.GetScheduleByCourseId) // Mendapatkan jadwal berdasarkan courseId
+		scheduleRoutes.GET("", scheduleCtrl.GetAllSchedules)                 // Mendapatkan semua jadwal
+		scheduleRoutes.PUT("/:courseId", scheduleCtrl.UpdateSchedule)        // Memperbarui jadwal berdasarkan courseId
+		scheduleRoutes.DELETE("/:courseId", scheduleCtrl.DeleteSchedule)     // Menghapus jadwal berdasarkan courseId
+	}
+
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
 	siswaRoutes := router.Group("/siswa")
