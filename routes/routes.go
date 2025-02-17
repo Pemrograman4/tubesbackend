@@ -34,18 +34,24 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 	}
 
 	// Course routes
-	courseCtrl := controllers.CourseController{DB: db}
+	// Membuat instance controller dengan database yang sudah terhubung
+	courseCtrl := controllers.NewCourseController(db)
+	courseUsersCtrl := controllers.NewCourseUsers(db)
 	courseRoutes := router.Group("/courses")
-	courseRoutes.Use(middlewares.AuthMiddleware(db)) // Proteksi semua route kursus
 	{
-		courseRoutes.POST("", courseCtrl.CreateCourse)
-		courseRoutes.GET("", courseCtrl.GetCourses)
-		courseRoutes.GET("/:id", courseCtrl.FindCourseById)
-		courseRoutes.PUT("/:id", courseCtrl.UpdateCourseById)
-		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)
-		courseRoutes.GET("/next-id", courseCtrl.GetNextCourseId)
-	}
+		// Kursus management routes
+		courseRoutes.POST("", courseCtrl.CreateCourse)           // Tambah kursus baru
+		courseRoutes.GET("", courseCtrl.GetCourses)              // Dapatkan semua kursus
+		courseRoutes.GET("/:id", courseCtrl.FindCourseById)      // Cari kursus berdasarkan ID
+		courseRoutes.PUT("/:id", courseCtrl.UpdateCourseById)    // Perbarui kursus berdasarkan ID
+		courseRoutes.DELETE("/:id", courseCtrl.DeleteCourse)     // Hapus kursus berdasarkan ID
+		courseRoutes.GET("/next-id", courseCtrl.GetNextCourseId) // Dapatkan ID kursus berikutnya
 
+		// Pendaftaran kursus
+		courseRoutes.POST("/register", courseUsersCtrl.RegisterCourse)                // Daftar kursus
+		courseRoutes.GET("/registrations", courseUsersCtrl.GetAllCourseRegistrations) // Dapatkan semua pendaftaran kursus
+
+	}
 	// Siswa routes
 	siswaCtrl := controllers.SiswaController{DB: db}
 	siswaRoutes := router.Group("/siswa")
@@ -61,7 +67,7 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		siswaRoutes.GET("/all/transaksi", siswaCtrl.GetAllTransaksiSiswa)
 		siswaRoutes.DELETE("/delete/transaksi/:id", siswaCtrl.DeleteTransaksi)
 		siswaRoutes.GET("/get/transaksi/:id", siswaCtrl.GetTransaksiByID)
-	
+
 	}
 
 	// Guru routes
@@ -89,7 +95,7 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 		tagihanRoutes.PUT("/:id/bayar", tagihanCtrl.BayarTagihan)
 		tagihanRoutes.GET("/user", tagihanCtrl.GetTagihanByUser)
 	}
-// Transaksi Guru Routes
+	// Transaksi Guru Routes
 	transaksiGuruCtrl := controllers.TransaksiGuruController{DB: db}
 	transaksiRoutes := router.Group("/transaksi-guru")
 	// transaksiRoutes.Use(middlewares.AuthMiddleware(db)) // Proteksi dengan autentikasi
@@ -104,7 +110,7 @@ func SetupRoutes(db *mongo.Database) *gin.Engine {
 
 	// Laporan Guru Routes
 	laporanRoutes := router.Group("/laporan-guru")
-	// laporanRoutes.Use(middlewares.AuthMiddleware(db)) 
+	// laporanRoutes.Use(middlewares.AuthMiddleware(db))
 	{
 
 		laporanRoutes.GET("/", transaksiGuruCtrl.GenerateLaporan)

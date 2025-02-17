@@ -17,6 +17,11 @@ type CourseController struct {
 	DB *mongo.Database
 }
 
+// NewCourseController membuat instance CourseController
+func NewCourseController(db *mongo.Database) *CourseController {
+	return &CourseController{DB: db}
+}
+
 func (cc *CourseController) CreateCourse(c *gin.Context) {
 	var course struct {
 		ID          string  `json:"id"`
@@ -103,55 +108,72 @@ func (cc *CourseController) FindCourseById(c *gin.Context) {
 	c.JSON(http.StatusOK, course)
 }
 
-// UpdateCourseById memperbarui data kursus berdasarkan ID
 func (cc *CourseController) UpdateCourseById(c *gin.Context) {
-	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5504")
 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
+	// Ambil ID dari parameter URL
 	id := c.Param("id")
+
+	// Pastikan ID valid untuk ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
+	// Buat struktur untuk menerima data yang diupdate
 	var updatedCourse struct {
 		Name        string  `json:"name"`
 		Duration    int     `json:"duration"`
 		Cost        float64 `json:"cost"`
 		Description string  `json:"description"`
+		Schedule    string  `json:"schedule"` // Kolom schedule yang bisa diupdate
 	}
 
+	// Bind data dari JSON request body ke struktur updatedCourse
 	if err := c.ShouldBindJSON(&updatedCourse); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Validasi bahwa schedule tidak kosong
+	if updatedCourse.Schedule == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Schedule is required"})
+		return
+	}
+
+	// Ambil koleksi "courses" dari database
 	collection := cc.DB.Collection("courses")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Membuat data yang akan diupdate
 	update := bson.M{
 		"$set": bson.M{
 			"name":        updatedCourse.Name,
 			"duration":    updatedCourse.Duration,
 			"cost":        updatedCourse.Cost,
 			"description": updatedCourse.Description,
+			"schedule":    updatedCourse.Schedule, // Update schedule
 		},
 	}
 
+	// Melakukan update pada dokumen yang sesuai dengan ObjectID
 	result, err := collection.UpdateOne(ctx, bson.M{"_id": objID}, update)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update course"})
 		return
 	}
 
+	// Cek apakah kursus ditemukan
 	if result.MatchedCount == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Course not found"})
 		return
 	}
 
+	// Jika berhasil, kirimkan respon sukses
 	c.JSON(http.StatusOK, gin.H{"message": "Course updated successfully"})
 }
 
