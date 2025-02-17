@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/organisasi/tubesbackend/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,13 +23,14 @@ func NewCourseController(db *mongo.Database) *CourseController {
 	return &CourseController{DB: db}
 }
 
+// CreateCourse membuat course baru
 func (cc *CourseController) CreateCourse(c *gin.Context) {
 	var course struct {
-		ID          string  `json:"id"`
 		Name        string  `json:"name"`
 		Duration    int     `json:"duration"`
 		Cost        float64 `json:"cost"`
 		Description string  `json:"description"`
+		Schedule    string  `json:"schedule"` // Field Schedule ditambahkan
 	}
 
 	// Validasi input JSON
@@ -37,18 +39,29 @@ func (cc *CourseController) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	// Validasi ID
-	if course.ID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID is required"})
+	// Validasi field yang wajib diisi
+	if course.Name == "" || course.Schedule == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Name and Schedule are required"})
 		return
 	}
 
+	// Create a new Course struct based on input
+	newCourse := models.Course{
+		ID:          primitive.NewObjectID(),
+		Name:        course.Name,
+		Duration:    course.Duration,
+		Cost:        course.Cost,
+		Description: course.Description,
+		Schedule:    course.Schedule,
+		CreatedAt:   primitive.NewDateTimeFromTime(time.Now()), // Set creation time
+	}
+
+	// Insert the new course into the MongoDB collection
 	collection := cc.DB.Collection("courses")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Insert ke MongoDB
-	_, err := collection.InsertOne(ctx, course)
+	_, err := collection.InsertOne(ctx, newCourse)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create course"})
 		return
